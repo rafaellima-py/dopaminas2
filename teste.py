@@ -1,5 +1,6 @@
-from datetime import datetime
+lista = [1,2,3,4,5,6,7,8,9,10]
 
-data = datetime.now()
+def last_items(quantidade):
+    print(lista[-quantidade:])
 
-print(data)
+last_items(5)

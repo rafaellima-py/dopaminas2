@@ -13,7 +13,7 @@ from random import randint
 mensagens = {}
 temporizador_user = {}
 user_plano = {}
-admin = '6721447659'
+admin =  '673195223' #'6721447659'
 user_images = {}
 canal =  '-1002411773802'#'@SecretinhoOficial'
 historico_previas = {}
@@ -144,57 +144,55 @@ async def temporizador():
 }
 
     while True:
-        await sleep(10)
-        
-        # Itera sobre uma cópia para evitar o erro de modificação do dicionário
         for user, dados in list(temporizador_user.items()):
+            # Atualiza o tempo restante
             temporizador_user[user]['tempo'] -= 10
+            print(temporizador_user)
+            # Verifica se o usuário ainda existe
             existe = Usuario().usuario_existe(str(user))
-            if existe:
-                idioma = Usuario().ver_idioma(str(user))
-                #if idioma == None:
-                #    Usuario.inserir_idioma(str(user), 'portugues')
-                
-                
-                print(temporizador_user)
-                if temporizador_user[user]['chamada'] > 0 and temporizador_user[user]['msg1'] == False and temporizador_user[user]['tempo'] == 0:
-                    await bot.send_message(user, mensagens[idioma]['msg1'])
-                    temporizador_user[user]['msg1'] = True
-                    temporizador_user[user]['chamada'] -= 1
-                    print(f"Enviando mensagem para {user}")
-                    await sleep(3600)
+            if not existe:
+                temporizador_user.pop(user, None)
+                continue
 
-                if temporizador_user[user]['chamada'] > 0 and temporizador_user[user]['msg2'] == False and temporizador_user[user]['tempo'] < 0:
-                    await bot.send_message(user, mensagens[idioma]['msg2'])
-                    temporizador_user[user]['msg2'] = True
-                    temporizador_user[user]['chamada'] -= 1
-                    print(f"Enviando mensagem para {user}")
-                    await sleep(3600*2)
+            # Obtém o idioma do usuário
+            idioma = Usuario().ver_idioma(str(user))
+            if idioma is None:
+                continue
 
-                if temporizador_user[user]['chamada'] > 0 and temporizador_user[user]['msg3'] == False and temporizador_user[user]['tempo'] < 0:
-                    await bot.send_message(user, mensagens[idioma]['msg3'])
-                    temporizador_user[user]['msg3'] = True
-                    temporizador_user[user]['chamada'] -= 1
-                    print(f"Enviando mensagem para {user}")
-                    await sleep(3600*3)
+            # Envio das mensagens baseado no tempo e status
+            if not dados['msg1'] and dados['tempo'] <= 0:
+                await bot.send_message(user, mensagens[idioma]['msg1'])
+                temporizador_user[user]['msg1'] = True
+                temporizador_user[user]['tempo'] += 3600  # Aguarda 1 hora para a próxima mensagem
 
-                if temporizador_user[user]['chamada'] > 0 and temporizador_user[user]['msg4'] == False and temporizador_user[user]['tempo'] < 0:
-                    await bot.send_message(user, mensagens[idioma]['msg3'])
-                    temporizador_user[user]['msg4'] = True
-                    temporizador_user[user]['chamada'] -= 1
-                    print(f"Enviando mensagem para {user}")
-                    await sleep(20)
-                if temporizador_user[user]['chamada'] == 0:
-                    temporizador_user.pop(user, None)
+            elif not dados['msg2'] and dados['tempo'] <= 0:
+                await bot.send_message(user, mensagens[idioma]['msg2'])
+                temporizador_user[user]['msg2'] = True
+                temporizador_user[user]['tempo'] += 3600 * 2  # Aguarda 2 horas
 
+            elif not dados['msg3'] and dados['tempo'] <= 0:
+                await bot.send_message(user, mensagens[idioma]['msg3'])
+                temporizador_user[user]['msg3'] = True
+                temporizador_user[user]['tempo'] += 3600 * 3  # Aguarda 3 horas
 
+            elif not dados['msg4'] and dados['tempo'] <= 0:
+                await bot.send_message(user, mensagens[idioma]['msg4'])
+                temporizador_user[user]['msg4'] = True
+                temporizador_user[user]['tempo'] += 20  # Aguarda 20 segundos
 
+            # Remove o usuário quando todas as mensagens foram enviadas
+            if all([dados['msg1'], dados['msg2'], dados['msg3'], dados['msg4']]):
+                temporizador_user.pop(user, None)
+
+        # Intervalo entre cada iteração
+        await asyncio.sleep(10)
 bot = AsyncTeleBot(config('TELEGRAM_KEY'))
 
 @bot.message_handler(commands=['start'])
 async def start(message):
     id_user = message.from_user.id
     historico_previas[id_user] = False
+    mensagens[id_user] = []
     await set_tempo(message.from_user.id)
     if not bot_in_private(message):
         return
@@ -219,7 +217,7 @@ async def start(message):
         Usuario().cadastrar_usuario(usuario)
         language_markup = InlineKeyboardMarkup(row_width=2)
         language_markup.add(InlineKeyboardButton(f'🇵🇹 Português', callback_data='set_language_portugues'))
-        language_markup.add(InlineKeyboardButton(f'🇪🇸 Espanhol', callback_data='set_language_espanhol'))
+       # language_markup.add(InlineKeyboardButton(f'🇪🇸 Espanhol', callback_data='set_language_espanhol'))
         language_markup.add(InlineKeyboardButton(f'🇧🇷 Português do Brasil', callback_data='set_language_portugues_br'))
         await bot.send_message(message.chat.id, 'Choose your language', reply_markup=language_markup)
    
@@ -229,7 +227,7 @@ async def start(message):
         if Usuario().get_qtd_start(str(message.from_user.id)) > 0 and not idioma:
             language_markup = InlineKeyboardMarkup(row_width=2)
             language_markup.add(InlineKeyboardButton(f'🇵🇹 Português', callback_data='set_language_portugues'))
-            language_markup.add(InlineKeyboardButton(f'🇪🇸 Espanhol', callback_data='set_language_espanhol'))
+           # language_markup.add(InlineKeyboardButton(f'🇪🇸 Espanhol', callback_data='set_language_espanhol'))
             language_markup.add(InlineKeyboardButton(f'🇧🇷 Português do Brasil', callback_data='set_language_portugues_br'))
             await bot.send_message(message.chat.id, 'Choose your language', reply_markup=language_markup)
 
@@ -237,8 +235,9 @@ async def start(message):
             await wellcome_new_user(message, message.from_user.id)
             await set_tempo(message.from_user.id)
         elif qtd_assinatura > 0:
-            await wellcome_new_user(message, message.from_user.id)
+            await wellcome_old_user(message, message.from_user.id)
             await set_tempo(message.from_user.id)
+        
             
 
 
@@ -250,35 +249,71 @@ async def wellcome_new_user(message, id_user):
     idioma = Usuario().ver_idioma(str(id_user))
     #print(idioma)
     if idioma == 'espanhol':
-        with open('sources/espanhol.jpeg', 'rb') as f:
-            await bot.send_photo(message.chat.id, f)
-            await bot.send_message(message.chat.id, language[idioma]['inicio'])
-            await list_products(message, idioma)
+        msg = await bot.send_message(message.chat.id, language[idioma]['inicio'])
+        
+        await show_previas(id_user, idioma)
+        await cta1(message, idioma)
+
+
     if idioma == 'portugues':
-        with open('sources/portugues.jpeg', 'rb') as f:
-            await bot.send_photo(message.chat.id, f)
-            await bot.send_message(message.chat.id, language[idioma]['inicio'])
-            #await list_products(message, idioma)
-            await interesse(message, idioma)
+        print(idioma)
+        msg = await bot.send_message(message.chat.id, language[idioma]['inicio'])
+        
+        await show_previas(id_user, idioma)
+        await cta1(message, idioma)
+
+    
     if idioma == 'ingles':
-        with open('sources/ingles.jpeg', 'rb') as f:
-            await bot.send_photo(message.chat.id, f)
-            await bot.send_message(message.chat.id, language[idioma]['inicio'])
-            #await list_products(message, idioma)
-            await interesse(message, idioma)
+        msg = await bot.send_message(message.chat.id, language[idioma]['inicio'])
+        
+        await show_previas(id_user, idioma)
+        await cta1(message, idioma)
+       
     if idioma == 'portugues_br':
-        with open('sources/portugues.jpeg', 'rb') as f:
-            await bot.send_photo(message.chat.id, f)
-            await bot.send_message(message.chat.id, language[idioma]['inicio'])
-            #await list_products(message, idioma)
-            await interesse(message, idioma)
+        print(idioma)
+        msg = await bot.send_message(message.chat.id, language[idioma]['inicio'])
+        
+        await show_previas(id_user, idioma)
+        await cta1(message, idioma)
 
 
-async def interesse(message, idioma):
+async def wellcome_old_user(message, id_user):
+    
+    idioma = Usuario().ver_idioma(str(id_user))
+    #print(idioma)
+    if idioma == 'espanhol':
+        #with open('sources/espanhol.jpeg', 'rb') as f:
+        #await bot.send_photo(message.chat.id, f)
+        msg = await bot.send_message(message.chat.id, language[idioma]['inicio2'])
+        #await registro_historico(msg, id_user)
+    
+        await old_list_products(message, idioma)
+    
+    if idioma == 'portugues':
+        #with open('sources/portugues.jpeg', 'rb') as f:
+        #await bot.send_photo(message.chat.id, f)
+        msg = await bot.send_message(message.chat.id, language[idioma]['inicio2'])
+        #await registro_historico(msg, id_user)
+       
+        await old_list_products(message, idioma)
+    
+    if idioma == 'portugues_br':
+        #with open('sources/portugues.jpeg', 'rb') as f:
+        #await bot.send_photo(message.chat.id, f)
+        msg = await bot.send_message(message.chat.id, language[idioma]['inicio2'])
+        #await registro_historico(msg, id_user)
+        await old_list_products(message, idioma)
+    
+
+
+async def cta1(message, idioma):
     markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(InlineKeyboardButton(language[idioma]['sim'], callback_data='sim'))
-    markup.add(InlineKeyboardButton(language[idioma]['nao'], callback_data='nao'))
-    await bot.send_message(message.chat.id, language[idioma]['call_interesse'], reply_markup=markup)
+    markup.add(InlineKeyboardButton(language[idioma]['cta1'], callback_data='cta1'))
+    
+    msg = await bot.send_message(message.chat.id, language[idioma]['plano'], reply_markup=markup)
+    #await registro_historico(msg, message.from_user.id)
+
+
 
 async def list_products(message,idioma):
     
@@ -287,44 +322,79 @@ async def list_products(message,idioma):
     mensal = InlineKeyboardButton(language[idioma]['mensal'], callback_data='pl_mensal')
     trimestral = InlineKeyboardButton(language[idioma]['trimestral'], callback_data='pl_trimestral')
     markup.add(semanal, mensal, trimestral)
-    await bot.send_message(chat_id=message.chat.id, text=language[idioma]['plano'], reply_markup=markup)
+    msg = await bot.send_message(chat_id=message.chat.id, text=language[idioma]['plano'], reply_markup=markup)
+    #await registro_historico(msg, message.from_user.id)
 
+async def old_list_products(message,idioma):
+    markup = InlineKeyboardMarkup(row_width=2)
+    semanal = InlineKeyboardButton(language[idioma]['semanal'], callback_data='pl_semanal')
+    mensal = InlineKeyboardButton(language[idioma]['mensal'], callback_data='pl_mensal')
+    trimestral = InlineKeyboardButton(language[idioma]['trimestral'], callback_data='pl_trimestral')
+    markup.add(mensal, trimestral)
+    msg = await bot.send_message(chat_id=message.chat.id, text=language[idioma]['plano'], reply_markup=markup)
+    #await registro_historico(msg, message.from_user.id)
 
+    
 
 async def show_plan(message, plan):
     user_id = message.from_user.id
     idioma = Usuario().ver_idioma(str(user_id))
-    
+    await reset_tempo(user_id)
+    await delete_mensagem_historico(user_id)
     
     print(idioma, user_id)
     InlineKeyboardMarkup(row_width=2)
    
     if not historico_previas[user_id]:
-        await show_previas(message)
-        historico_previas[user_id] = True
-    await bot.send_message(chat_id=user_id, text=language[idioma][plan])
-        
+        await show_previas(user_id, idioma)
+        historico_previas[user_id] = True #False manda sem limites, True trava em um
+    msg = await bot.send_message(chat_id=user_id, text= language[idioma]['selecionado'] + language[idioma][plan])
+    await registro_historico(msg, user_id)
+    trimestral = {user_id: False}    
     markup = InlineKeyboardMarkup(row_width=2)
     bizum_bt = InlineKeyboardButton(language[idioma]['bizum'], callback_data='cb_bisum')
     mbway_bt = InlineKeyboardButton(language[idioma]['mbway'], callback_data='cb_mbway')
     voltar_bt = InlineKeyboardButton('Back', callback_data='voltar')
     pix_bt = InlineKeyboardButton('Pague via Pix', callback_data='cb_pix')
+    suporte_bt = InlineKeyboardButton(language[idioma]['bt_suporte'], url='https://t.me/midasgn')
+    qtd_assinatura = Usuario().qtd_assinatura(str(user_id))
+    plano = user_plano[user_id]['plano']
+    if plano == 'semanal':
+        bt_voltar = InlineKeyboardButton(language[idioma]['voltar_mensal'], callback_data='pl_mensal')
+        markup.add(bt_voltar)
+    elif plano == 'mensal' and qtd_assinatura < 1:
+        bt_voltar = InlineKeyboardButton(language[idioma]['voltar_semanal'], callback_data='pl_semanal')
+        markup.add(bt_voltar)
+    
+    elif plano == 'mensal' and qtd_assinatura > 0 :
+        bt_voltar = InlineKeyboardButton(language[idioma]['voltar_trimestral'], callback_data='pl_trimestral')
+        markup.add(bt_voltar)
+
+    elif plano == 'trimestral':
+        bt_voltar = InlineKeyboardButton(language[idioma]['voltar_mensal'], callback_data='pl_mensal')
+        trimestral[user_id] = True
+        markup.add(bt_voltar)
+
+
+
+
     if idioma != 'portugues_br':
-        markup.add(bizum_bt, mbway_bt, voltar_bt)
-        await bot.send_message(user_id, language[idioma]['plano'], reply_markup=markup)
+        markup.add(bizum_bt, mbway_bt, suporte_bt )
+        msg = await bot.send_message(user_id, language[idioma]['plano'], reply_markup=markup)
+        await registro_historico(msg, user_id)
     else:
-        markup.add(pix_bt, voltar_bt)
-        await bot.send_message(user_id, language[idioma]['plano'], reply_markup=markup)
+        markup.add(pix_bt, suporte_bt)
+        msg = await bot.send_message(user_id, language[idioma]['plano'], reply_markup=markup)
+        await registro_historico(msg, user_id)
 
-
-async def show_previas(message):
-    user_id = message.from_user.id
-    idioma = Usuario().ver_idioma(str(user_id))
+async def show_previas(id_user, idioma):
+   
+    idioma = Usuario().ver_idioma(str(id_user))
     
     
     with open(f'sources/previa{randint(1, 2)}.mp4', 'rb') as f:
-        await bot.send_video(user_id, f, caption=language[idioma]['previa'])
-        
+        msg = await bot.send_video(id_user, f, caption=language[idioma]['previa'])
+        #await registro_historico(msg, user_id)
 
 @bot.callback_query_handler(func=lambda call: True)
 async def callback(call):
@@ -337,27 +407,25 @@ async def callback(call):
     match call.data:
 
 
-        case 'sim':
+        case 'cta1':
+            await reset_tempo(call.from_user.id)
             idioma =  Usuario().ver_idioma(str(call.from_user.id))
             markup = InlineKeyboardMarkup(row_width=2)
-            markup.add(InlineKeyboardButton(language[idioma]['oferta_exclusiva'], callback_data='pl_exclusiva'))
+            markup.add(InlineKeyboardButton(language[idioma]['oferta_exclusiva'], callback_data='pl_mensal')) 
             markup.add(InlineKeyboardButton(language[idioma]['oferta_semanal'], callback_data='pl_semanal'))
             
             await bot.send_message(call.message.chat.id, language[idioma]['oferta_apresentacao'], reply_markup=markup)
         
-        case 'nao':
-            idioma =  Usuario().ver_idioma(str(call.from_user.id))
-            await bot.send_message(call.message.chat.id, language[idioma]['cb_nao_interesse']) 
-
         case 'set_language_portugues':
             
             # se ele caiu aqui, não está cadastrado no banco, entao vamos cadastrar em ambos os idiomas
-            
+            await reset_tempo(call.from_user.id)
             await bot.delete_message(call.message.chat.id, call.message.id)
             Usuario().inserir_idioma(str(call.from_user.id), 'portugues')
             await wellcome_new_user(call.message, str(call.from_user.id))
 
         case 'set_language_espanhol':
+            await reset_tempo(call.from_user.id)
             await bot.delete_message(call.message.chat.id, call.message.id)
             Usuario().inserir_idioma(str(call.from_user.id), 'espanhol')
             await wellcome_new_user(call.message, str(call.from_user.id))
@@ -368,23 +436,23 @@ async def callback(call):
             await wellcome_new_user(call.message, str(call.from_user.id))
         
         case 'pl_semanal':
+            await reset_tempo(call.from_user.id)
             #await bot.delete_message(call.message.chat.id, call.message.id)
-            await bot.delete_message(call.message.chat.id, call.message.id)
-            #idioma = Usuario().ver_idioma(str(call.from_user.id))
+            #await delete_mensagem_historico(call.from_user.id, 1)
+            idioma = Usuario().ver_idioma(str(call.from_user.id))
+            user_plano[call.from_user.id] = {
+            'nome': call.from_user.first_name,
+            'username': call.from_user.username,
+            'idioma': idioma,
+            'plano': 'semanal',
+            'preco': 'None'}
+
             await show_plan(call, 'semanal')
-            #user_plano[call.from_user.id] = {
-            #'nome': call.from_user.first_name,
-            #'username': call.from_user.username,
-            #'idioma': idioma,
-            #'plano': 'semanal',
-            #'preco': 'None'
-        
-    #}
-        #    print(user_plano)
+            print(user_plano)
+
 
         case 'pl_mensal':
-            await bot.delete_message(call.message.chat.id, call.message.id)
-            await show_plan(call, 'mensal')
+            #await delete_mensagem_historico(call.from_user.id, 1)
             await reset_tempo(call.from_user.id)
             idioma = Usuario().ver_idioma(str(call.from_user.id))
            
@@ -393,14 +461,14 @@ async def callback(call):
             'username': call.from_user.username,
             'idioma': idioma,
             'plano': 'mensal',
-            'preco': None
-        
-    }        
+            'preco': None  }        
+            await show_plan(call, 'mensal')
             print(user_plano)
+
+
         case 'pl_trimestral':
             await bot.delete_message(call.message.chat.id, call.message.id)
             await reset_tempo(call.from_user.id)
-            await show_plan(call, 'trimestral')
             idioma = Usuario().ver_idioma(str(call.from_user.id))
         
             user_plano[call.from_user.id] = {
@@ -411,12 +479,16 @@ async def callback(call):
             'preco': None
         
     }      
+            await show_plan(call, 'trimestral')
             print(user_plano)
 
         case 'cb_bisum':
             idioma = Usuario().ver_idioma(str(call.from_user.id))
             await reset_tempo(call.from_user.id)
-            await bot.send_message(call.from_user.id, language[idioma]['pg_instrucao'])
+            markup = InlineKeyboardMarkup()
+            bt_suporte = InlineKeyboardButton(language[idioma]['bt_suporte'], url='https://t.me/midasgn')
+            markup.add(bt_suporte)
+            await bot.send_message(call.from_user.id, language[idioma]['pg_instrucao'] + language[idioma]['suporte'], reply_markup=markup)
             chave_pg = "Chave: 604338509"
             await bot.send_message(call.from_user.id, text=f"```{chave_pg}```", parse_mode="MarkdownV2")
             await bot.send_message(call.from_user.id, language[idioma]['esperando_pg'])
@@ -424,7 +496,10 @@ async def callback(call):
         case 'cb_mbway':
             idioma = Usuario().ver_idioma(str(call.from_user.id))
             await reset_tempo(call.from_user.id)
-            await bot.send_message(call.from_user.id, language[idioma]['pg_instrucao'])
+            markup = InlineKeyboardMarkup()
+            bt_suporte = InlineKeyboardButton(language[idioma]['bt_suporte'], url='https://t.me/midasgn')
+            markup.add(bt_suporte)
+            await bot.send_message(call.from_user.id, language[idioma]['pg_instrucao'] + language[idioma]['suporte'], reply_markup=markup)
             chave_pg = "Chave: 933466639"
             await bot.send_message(call.from_user.id, text=f"```{chave_pg}```", parse_mode="MarkdownV2")
             await bot.send_message(call.from_user.id, language[idioma]['esperando_pg'])
@@ -433,22 +508,27 @@ async def callback(call):
         case 'cb_pix':
             idioma = Usuario().ver_idioma(str(call.from_user.id))
             await reset_tempo(call.from_user.id)
-            await bot.send_message(call.from_user.id, language[idioma]['pg_instrucao'])
-            chave_pg = "Chave: c2e51e73-813e-45f6-87dd-e7b70f859870"
+            markup = InlineKeyboardMarkup()
+            bt_suporte = InlineKeyboardButton(language[idioma]['bt_suporte'], url='https://t.me/midasgn')
+            markup.add(bt_suporte)
+            await bot.send_message(call.from_user.id, language[idioma]['pg_instrucao'] + language[idioma]['suporte'], reply_markup=markup)
+            chave_pg = "Chave: mccctavares@gmail.com"
             await bot.send_message(call.from_user.id, text=f"```{chave_pg}```", parse_mode="MarkdownV2")
             await bot.send_message(call.from_user.id, language[idioma]['esperando_pg'])
            
         
         case 'voltar':
             idioma = Usuario().ver_idioma(str(call.from_user.id))
-            
-            await bot.delete_message(call.message.chat.id, call.message.message_id)
+
+            #await delete_mensagem_historico(call.from_user.id, 1)
             await reset_tempo(call.from_user.id)
-            await list_products(call.message, idioma)
+            plano = user_plano[call.from_user.id]['plano']
+            if plano == 'semanal':
+                pass
         #--------------- callback para comprovantes manuais ------------------
           # Extrair o message_id da callback data
     message_id = int(call.data.split('_')[1])
-    
+    historico_previas[call.from_user.id] = False
     # Buscar o ID do usuário que enviou a imagem
     user_id = user_images.get(message_id)
     
@@ -476,6 +556,19 @@ async def callback(call):
 
 
 
+async def registro_historico(mensagem, id_user):
+
+    mensagens[id_user].append(mensagem)
+    print(mensagens)
+
+async def delete_mensagem_historico(id_user):
+    items = mensagens[id_user]
+    if len(items) > 0:
+        for item in items:
+            try:
+                await bot.delete_message(item.chat.id, item.message_id)
+            except Exception as e:
+                pass
 async def criar_assinatura(user_id):
     if user_plano[user_id]['plano'] == 'semanal':
                 expiracao = datetime.datetime.utcnow() + timedelta(days=7)
