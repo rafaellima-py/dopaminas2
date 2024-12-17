@@ -14,7 +14,7 @@ from asyncio import sleep
 mensagens = {}
 temporizador_user = {}
 user_plano = {}
-admin =  '673195223' #'6721447659'
+admin =  '5090351005' #'673195223' #'6721447659' #7636075219
 user_images = {}
 canal =  '-1002411773802'#'@SecretinhoOficial'
 historico_previas = {}
@@ -225,11 +225,12 @@ async def start(message):
             await bot.send_message(message.chat.id, 'Choose your language', reply_markup=language_markup)
 
         if qtd_assinatura == 0:
-            await wellcome_new_user(message, message.from_user.id)
-            await set_tempo(message.from_user.id)
+            print(id_user)
+            await wellcome_new_user(id_user=id_user)
+            await set_tempo(id_user)
         elif qtd_assinatura > 0:
             await wellcome_old_user(message, message.from_user.id)
-            await set_tempo(message.from_user.id)
+            await set_tempo(id_user)
         
             
 
@@ -237,57 +238,56 @@ async def start(message):
 
 
 
-async def wellcome_new_user(message, id_user):
+async def wellcome_new_user(id_user):
     
     idioma = Usuario().ver_idioma(str(id_user))
     #print(idioma)
     if idioma == 'espanhol':
-        msg = await bot.send_message(message.chat.id, language[idioma]['inicio'])
+        msg = await bot.send_message(id_user, language[idioma]['inicio'])
         
         msg2 = await send_audio(id_user, 'audio1.ogg')
         await sleep(5)
-        msg3 = await cta1(message, idioma)
+        msg3 = await cta1(id_user, idioma)
         await registro_historico(msg, id_user)
-        await registro_historico(msg2, id_user)
-        await registro_historico(msg3, id_user)
-
-    if idioma == 'portugues':
-        print(idioma)
-        msg = await bot.send_message(message.chat.id, language[idioma]['inicio'])
-        
-        msg2 = await send_audio(id_user, 'audio1_ap.ogg')
-        await sleep(5)
-        msg3 = await cta1(message, idioma)
-        await registro_historico(msg, id_user)
-        await registro_historico(msg2, id_user)
-        await registro_historico(msg3, id_user)
-
-    
-    if idioma == 'ingles':
-        msg = await bot.send_message(message.chat.id, language[idioma]['inicio'])
-        
-        msg2 = await send_audio(id_user, 'audio1_ap.ogg')
-        await sleep(5)
-        msg3 = await cta1(message, idioma)
-        await registro_historico(msg, id_user)
-        await registro_historico(msg2, id_user)
-        await registro_historico(msg3, id_user)
        
-    if idioma == 'portugues_br':
-        msg = await bot.send_message(message.chat.id, language[idioma]['inicio'])
+ 
+    elif idioma == 'portugues':
+        print(idioma)
+        msg = await bot.send_message(id_user, language[idioma]['inicio'])
         
         msg2 = await send_audio(id_user, 'audio1_ap.ogg')
         await sleep(5)
-        msg3 = await cta1(message, idioma)
+        msg3 = await cta1(id_user, idioma)
         await registro_historico(msg, id_user)
-        await registro_historico(msg2, id_user)
-        await registro_historico(msg3, id_user)
+       
+    
+    elif idioma == 'ingles':
+        msg = await bot.send_message(id_user, language[idioma]['inicio'])
+        
+        msg2 = await send_audio(id_user, 'audio1_ap.ogg')
+        await sleep(5)
+        msg3 = await cta1(id_user, idioma)
+        await registro_historico(msg, id_user)
+    
+    elif idioma == 'portugues_br':
+        
+        msg = await bot.send_message(id_user, language[idioma]['inicio'])
+        
+        msg2 = await send_audio(id_user, 'audio1_ap.ogg')
+        await sleep(5)
+        print('antes do cta', id_user)
+        msg3 = await cta1(id_user, idioma)
+        #await registro_historico(msg, id_user)
 
 
 async def send_audio(id_user, audio):
     with open(f'sources/{audio}', 'rb') as f:
         msg = await bot.send_audio(id_user, f)
         await registro_historico(msg, id_user)
+
+
+
+
 async def wellcome_old_user(message, id_user):
     
     idioma = Usuario().ver_idioma(str(id_user))
@@ -317,12 +317,13 @@ async def wellcome_old_user(message, id_user):
     
 
 
-async def cta1(message, idioma):
+async def cta1(id_user, idioma):
+    print('id caiu no cta', id_user)
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(InlineKeyboardButton(language[idioma]['cta1'], callback_data='cta1'))
     
-    msg = await bot.send_message(message.chat.id, language[idioma]['plano'], reply_markup=markup)
-    #await registro_historico(msg, message.from_user.id)
+    msg = await bot.send_message(id_user, language[idioma]['clique'], reply_markup=markup)
+    await registro_historico(msg, id_user)
 
 
 
@@ -356,13 +357,13 @@ async def show_plan(message, plan):
     print(idioma, user_id)
     InlineKeyboardMarkup(row_width=2)
    
-    if not historico_previas[user_id]:
-        await show_previas(user_id, idioma)
-        historico_previas[user_id] = True #False manda sem limites, True trava em um
-    msg = await bot.send_message(chat_id=user_id, text= language[idioma]['selecionado'] + language[idioma][plan])
-    await registro_historico(msg, user_id)
+    #if not historico_previas[user_id]:
+        #await show_previas(user_id, idioma)
+        #historico_previas[user_id] = True #False manda sem limites, True trava em um
+    #msg = await bot.send_message(chat_id=user_id, text= language[idioma]['selecionado'] + language[idioma][plan])
+    #await registro_historico(msg, user_id)
     trimestral = {user_id: False}    
-    markup = InlineKeyboardMarkup(row_width=2)
+    markup = InlineKeyboardMarkup(row_width=3)
     bizum_bt = InlineKeyboardButton(language[idioma]['bizum'], callback_data='cb_bisum')
     mbway_bt = InlineKeyboardButton(language[idioma]['mbway'], callback_data='cb_mbway')
     voltar_bt = InlineKeyboardButton('Back', callback_data='voltar')
@@ -392,12 +393,32 @@ async def show_plan(message, plan):
 
     if idioma != 'portugues_br':
         markup.add(mbway_bt,bt_paypal, suporte_bt )
-        msg = await bot.send_message(user_id, language[idioma]['plano'], reply_markup=markup)
-        await registro_historico(msg, user_id)
+        msg_text = f"{language[idioma]['selecionado'].upper()}\n  __{language[idioma][plan]}__"
+        msg_text = msg_text.replace('.', '\\.')
+
+        msg = await bot.send_message(
+            chat_id=user_id, 
+            text=msg_text, 
+            reply_markup=markup, 
+            parse_mode='MarkdownV2'
+        )
+
     else:
         markup.add(pix_bt,bt_paypal ,suporte_bt)
-        msg = await bot.send_message(user_id, language[idioma]['plano'], reply_markup=markup)
+        msg_text = f"{language[idioma]['selecionado'].upper()}\n  __{language[idioma][plan]}__"
+        msg_text = msg_text.replace('.', '\\.')
+
+        msg = await bot.send_message(
+            chat_id=user_id, 
+            text=msg_text, 
+            reply_markup=markup, 
+            parse_mode='MarkdownV2'
+        )
+
+        
         await registro_historico(msg, user_id)
+
+
 
 async def show_previas(id_user, idioma):
    
@@ -427,8 +448,8 @@ async def callback(call):
             markup.add(InlineKeyboardButton(language[idioma]['oferta_semanal'], callback_data='pl_semanal'))
             await delete_mensagem_historico(call.from_user.id)
             await send_audio(call.from_user.id, 'audio2_ap.ogg')
-            await sleep(5)
-            msg = await bot.send_message(call.message.chat.id, language[idioma]['plano'], reply_markup=markup)
+            await sleep(10)
+            msg = await bot.send_message(call.message.chat.id, text=f'_{language[idioma]['plano']}_', reply_markup=markup, parse_mode='MarkdownV2')
             await registro_historico(msg, call.from_user.id)
         case 'set_language_portugues':
             
@@ -436,18 +457,18 @@ async def callback(call):
             await reset_tempo(call.from_user.id)
             await bot.delete_message(call.message.chat.id, call.message.id)
             Usuario().inserir_idioma(str(call.from_user.id), 'portugues')
-            await wellcome_new_user(call.message, str(call.from_user.id))
+            await wellcome_new_user(call.from_user.id)
 
         case 'set_language_espanhol':
             await reset_tempo(call.from_user.id)
             await bot.delete_message(call.message.chat.id, call.message.id)
             Usuario().inserir_idioma(str(call.from_user.id), 'espanhol')
-            await wellcome_new_user(call.message, str(call.from_user.id))
+            await wellcome_new_user(call.from_user.id)
 
         case 'set_language_portugues_br':
             await bot.delete_message(call.message.chat.id, call.message.id)
             Usuario().inserir_idioma(str(call.from_user.id), 'portugues_br')
-            await wellcome_new_user(call.message, str(call.from_user.id))
+            await wellcome_new_user(call.from_user.id)
         
         case 'pl_semanal':
             await reset_tempo(call.from_user.id)

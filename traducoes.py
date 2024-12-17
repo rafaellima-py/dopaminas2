@@ -62,6 +62,7 @@ language = {
         'selecionado': 'Seleccionaste el plan',
         'suporte': '💬 Si tienes alguna duda, pregunta o sugerencia, contáctanos en nuestro canal de suporte.',
         'bt_suporte': '💬 Suporte',
+        'clique': 'Haz clic en el botón de abajo 👇🏻👇🏻👇🏻'
     },
     
     "portugues": {
@@ -97,6 +98,7 @@ language = {
         'selecionado': 'Selecionaste o plano',
         'suporte': '💬 Se você tiver alguma dúvida, pergunte ou sugira algo, entre em contato no nosso canal de suporte.',
         'bt_suporte': '💬 Suporte',
+        'clique': 'Clique no botão abaixo 👇🏻👇🏻👇🏻'
     },
     
     "portugues_br": {
@@ -134,7 +136,7 @@ language = {
         'selecionado': 'Você selecionou o plano',
         'suporte': '💬 Se você tiver alguma dúvida, pergunte ou sugira algo, entre em contato no nosso canal de suporte.',
         'bt_suporte': '💬 Suporte',
-        'escolha': 'Escolha'
+        'clique': 'Clique no botão abaixo 👇🏻👇🏻👇🏻'
     }
 }
 
