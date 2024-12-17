@@ -45,7 +45,7 @@ language = {
         '1dias': 'Su suscripción caducará en 1 día. Vuelve a firmar un plan. /start',
         '3min': 'Su suscripción caducará en 30 min. Vuelve a firmar un plan. /start.',
         'expirado': 'Su suscripción ha caducado. Vuelve a firmar un plan. /start.',
-        'cta1': f'Quiero suscribirme al vip € {str(preco_es["semanal"])} 🔞',
+        'cta1': f'Quiero suscribirme al vip semanal: €{str(preco_es["semanal"])} 🔞',
         'plano': 'Elige tu plan',
         'mensal': f'🔞 Mensual € {str(preco_es["mensal"])}',
         'semanal': f'🔥 Semanal € {str(preco_es["semanal"])}',
@@ -82,7 +82,7 @@ language = {
         '1dias': 'A sua subscrição expirará em 1 dia. Renove o plano novamente /start.',
         '3min': 'A sua subscrição expirará em 30 minutos. Renove o plano novamente /start.',
         'expirado': 'A sua subscrição expirou. Renove o plano novamente /start.',
-        'cta1': f'Quero subscrever ao VIP € {str(preco_pt["semanal"])} 🔞',
+        'cta1': f'Quero subscrever ao VIP semanal: €{str(preco_pt["semanal"])} 🔞',
         'plano': 'Escolha o seu plano',
         'mensal': f'🔞 Mensal € {str(preco_pt["mensal"])}',
         'semanal': f'🔥 Semanal € {str(preco_pt["semanal"])}',
@@ -117,7 +117,7 @@ language = {
         '1dias': 'Sua assinatura expirará em 1 dia. Renove o plano novamente /start.',
         '3min': 'Sua assinatura expirará em 30 minutos. Renove o plano novamente /start.',
         'expirado': 'Sua assinatura expirou. Renove o plano novamente /start.',
-        'cta1': f'Quero assinar o VIP R$ {str(preco_br["semanal"])} 🔞',
+        'cta1': f'Quero assinar o VIP semanal: R${str(preco_br["semanal"])} 🔞',
         'plano': 'Escolha seu plano',
         'mensal': f'🔞 Mensal R$ {str(preco_br["mensal"])}',
         'semanal': f'🔥 Semanal R$ {str(preco_br["semanal"])}',
@@ -134,6 +134,7 @@ language = {
         'selecionado': 'Você selecionou o plano',
         'suporte': '💬 Se você tiver alguma dúvida, pergunte ou sugira algo, entre em contato no nosso canal de suporte.',
         'bt_suporte': '💬 Suporte',
+        'escolha': 'Escolha'
     }
 }
 
