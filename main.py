@@ -861,13 +861,46 @@ async def criar_assinatura(user_id):
     temporizador_user.pop(user_id, None)
 
 
+@bot.message_handler(commands=['gerenciar', 'gerenciar_assinatura', 'gerente', 'assinantes'])
+async def gerenciar_assinatura(message):
+    print(message.from_user.id)
+    if str(message.from_user.id) != str(admin):
+        await bot.send_message(message.chat.id, 'Você não tem permissão para executar esta função.')
+        return
+
+    menu = InlineKeyboardMarkup(row_width=2)
+    assinantes = Usuario().show_info_assinantes()
+
+    if not assinantes:  # Verifica se a lista está vazia
+        await bot.send_message(message.chat.id, 'Você não possui nenhuma assinatura.')
+        return
+
+    for assinante in assinantes:
+        nome = assinante['nome']
+        id = assinante['id']
+        username = assinante['username']
+
+        nome_bt = InlineKeyboardButton(f'{nome} ({username})', callback_data=f'gerenciar_{id}')
+        menu.add(nome_bt)
+
+    await bot.send_message(message.chat.id, 'Escolha uma assinatura para gerenciar', reply_markup=menu)
+
+
+
+
+
+
+
 @bot.message_handler(content_types=['photo', 'video', 'text'])
 async def handle_photo(message):
+    if message.text.startswith('/'):
+        return
     if str(message.from_user.id) == str(admin):
             user_id = message.from_user.id
             print(mensagens_broadcast)
+
                 # Determina o tipo de conteúdo recebido
-            if message.content_type == 'text':
+            if message.content_type == 'text' :
                 mensagens_broadcast[user_id] = {'type': 'text', 'content': message.text, 'caption': None}
                 print(mensagens_broadcast)
             elif message.content_type == 'photo':
@@ -917,31 +950,6 @@ async def handle_photo(message):
             # Enviar a mensagem para o admin com os botões
             await bot.send_message(admin, 'Comprovante recebido. Aceitar ou Cancelar?', reply_markup=botoes)
  
-
-
-@bot.message_handler(commands=['gerenciar', 'gerenciar_assinatura', 'gerente', 'assinantes'])
-async def gerenciar_assinatura(message):
-    print(message.from_user.id)
-    if str(message.from_user.id) != str(admin):
-        await bot.send_message(message.chat.id, 'Você não tem permissão para executar esta função.')
-        return
-
-    menu = InlineKeyboardMarkup(row_width=2)
-    assinantes = Usuario().show_info_assinantes()
-
-    if not assinantes:  # Verifica se a lista está vazia
-        await bot.send_message(message.chat.id, 'Você não possui nenhuma assinatura.')
-        return
-
-    for assinante in assinantes:
-        nome = assinante['nome']
-        id = assinante['id']
-        username = assinante['username']
-
-        nome_bt = InlineKeyboardButton(f'{nome} ({username})', callback_data=f'gerenciar_{id}')
-        menu.add(nome_bt)
-
-    await bot.send_message(message.chat.id, 'Escolha uma assinatura para gerenciar', reply_markup=menu)
 
 
 async def main():
