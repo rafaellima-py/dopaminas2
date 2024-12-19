@@ -149,11 +149,15 @@ async def temporizador():
         }
 }
 
+
+    historico_mensagens = {}  # Histórico de mensagens enviadas
+
     while True:
         for user, dados in list(temporizador_user.items()):
             # Atualiza o tempo restante
             temporizador_user[user]['tempo'] -= 10
             print(temporizador_user)
+
             # Verifica se o usuário ainda existe
             existe = Usuario().usuario_existe(str(user))
             if not existe:
@@ -162,27 +166,33 @@ async def temporizador():
 
             # Obtém o idioma do usuário
             idioma = Usuario().ver_idioma(str(user))
-            if idioma is None:
-                continue
+            if idioma not in mensagens:
+                continue  # Ignora se o idioma não está no dicionário
 
             # Envio das mensagens baseado no tempo e status
             if not dados['msg1'] and dados['tempo'] <= 0:
-                await send_audio(user, 'audio3.ogg')
+                mensagem = mensagens[idioma]['msg1']
+                await send_audio(user, 'audio3.ogg')  # Envia o áudio
+                historico_mensagens.setdefault(user, []).append(mensagem)  # Salva no histórico
                 temporizador_user[user]['msg1'] = True
                 temporizador_user[user]['tempo'] += 3600  # Aguarda 1 hora para a próxima mensagem
 
             elif not dados['msg2'] and dados['tempo'] <= 0:
-                pass    
-                #await bot.send_message(user,'audio')
-                #temporizador_user[user]['msg2'] = True
-                #temporizador_user[user]['tempo'] += 3600 * 2  # Aguarda 2 horas
+                mensagem = mensagens[idioma]['msg2']
+                # await bot.send_message(user, mensagem)  # Envia a mensagem
+                historico_mensagens.setdefault(user, []).append(mensagem)
+                temporizador_user[user]['msg2'] = True
+                temporizador_user[user]['tempo'] += 3600 * 2  # Aguarda 2 horas
 
             # Remove o usuário quando todas as mensagens foram enviadas
-            if all([dados['msg1'], dados['msg2'],]):
+            if all([dados['msg1'], dados['msg2']]):
                 temporizador_user.pop(user, None)
 
         # Intervalo entre cada iteração
         await asyncio.sleep(10)
+
+
+
 bot = AsyncTeleBot(config('TELEGRAM_KEY_TEST'))
 
 @bot.message_handler(commands=['start'])
@@ -725,7 +735,7 @@ async def callback(call):
             lote_tamanho = 10
             intervalo = 2
             botoes = ReplyKeyboardMarkup(resize_keyboard=True)
-            botoes.add(KeyboardButton(text='/plans'))
+            botoes.add(KeyboardButton(text='/start'))
             # Envio em lotes
             for i in range(0, len(users), lote_tamanho):
                 lote = users[i:i + lote_tamanho]
@@ -886,8 +896,7 @@ async def handle_photo(message):
 
     else:
         if message.content_type == 'text':
-            idioma = Usuario().ver_idioma(str(message.from_user.id))
-            await list_products(message, idioma)
+            pass
 
         elif message.chat.type == 'private':
             await reset_tempo(message.from_user.id)
