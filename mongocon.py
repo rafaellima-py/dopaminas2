@@ -151,5 +151,117 @@ class Usuario:
         else:
             return False
 
+
+
+
+    def show_info_assinantes(self, id=None):
+        if id:
+            assinante = self.collection_payment.find_one({'id': id})  # find_one retorna um único documento
+            if assinante:
+                return [{
+                    'id': assinante.get('id'),
+                    'nome': assinante.get('nome'),
+                    'username': assinante.get('username'),
+                    'idioma': assinante.get('idioma'),
+                    'tipo': assinante.get('tipo'),
+                    'criacao': assinante.get('criado'),
+                    'expiracao': assinante.get('expira'),
+                }]
+            return []  # Retorne uma lista vazia se nenhum assinante for encontrado
+        else:
+            assinantes = self.collection_payment.find({})  # find retorna um cursor
+            lista_assinantes = []
+            for assinante in assinantes:
+                lista_assinantes.append({
+                    'id': assinante.get('id'),
+                    'nome': assinante.get('nome'),
+                    'username': assinante.get('username'),
+                    'idioma': assinante.get('idioma'),
+                    'tipo': assinante.get('tipo'),
+                    'criacao': assinante.get('criado'),
+                    'expiracao': assinante.get('expira'),
+                })
+            return lista_assinantes
+    
+    def delete_assinatura(self, id):
+        try:
+           # mudar a data de expiração para o dia atual
+            self.collection_payment.update_one({'id': id}, {'$set': {'expira': datetime.utcnow()}})
+
+            return True
+        except:
+            return False
+    def extender_assinatura(self, id, dias):
+        from datetime import datetime, timedelta
+        
+        # Busca o assinante pelo ID
+        assinante = self.collection_payment.find_one({'id': id})
+        
+        if assinante:
+            try:
+                # Converte o campo 'expira' para datetime, caso necessário
+                expira_atual = assinante.get('expira')
+                if isinstance(expira_atual, str):
+                    expira_atual = datetime.fromisoformat(expira_atual)  # Ajuste se necessário para seu formato de string
+                
+                # Garante que expira_atual é um datetime válido
+                if not isinstance(expira_atual, datetime):
+                    raise ValueError("Campo 'expira' não é um datetime válido.")
+                
+                # Calcula a nova data de expiração
+                nova_expiracao = expira_atual + timedelta(days=dias)
+                
+                # Atualiza o registro no banco de dados
+                self.collection_payment.update_one({'id': id}, {'$set': {'expira': nova_expiracao}})
+                
+                return True
+            except Exception as e:
+                print(f"Erro ao extender assinatura: {e}")
+                return False
+        
+        # Assinante não encontrado
+        return False
+    def extender_vitalicio(self, id):
+        from datetime import datetime, timedelta
+
+        # Busca o assinante pelo ID
+        assinante = self.collection_payment.find_one({'id': id})
+        
+        if assinante:
+            try:
+                # Converte o campo 'expira' para datetime, caso necessário
+                expira_atual = assinante.get('expira')
+                if isinstance(expira_atual, str):
+                    expira_atual = datetime.fromisoformat(expira_atual)  # Ajuste se necessário para o formato do seu campo
+                
+                # Garante que expira_atual é um datetime válido
+                if not isinstance(expira_atual, datetime):
+                    raise ValueError("Campo 'expira' não é um datetime válido.")
+                
+                # Define uma nova data de expiração vitalícia (100 anos no futuro)
+                nova_expiracao = expira_atual + timedelta(days=365 * 100)
+                
+                # Atualiza o registro no banco de dados
+                self.collection_payment.update_one({'id': id}, {'$set': {'expira': nova_expiracao}})
+                
+                return True
+            except Exception as e:
+                print(f"Erro ao extender para vitalício: {e}")
+                return False
+        
+        # Assinante não encontrado
+        return False
+    
+
+    def get_id_nao_assinantes(self):
+        usuarios = self.collection.find({'qt_assinatura': {'$lt': 1}})
+        return list(usuarios)
 usuario = Usuario()
-#usuario.insert_admin(str(7124703290))
+
+'''
+[{'id': '673195223', 'nome': 'Rafael', 'username': 'rafaellima777', 'idioma': 'portugues_br', 'tipo': 'mensal', 'criacao': datetime.datetime(2024, 12, 17, 8, 3, 9, 631000), 'expiracao': datetime.datetime(2025, 1, 16, 8, 3, 9, 631000)}]
+❯ 
+'''
+print(usuario.extender_assinatura('673195223', 7))
+print(usuario.show_info_assinantes())
+#    id = assinante.get('id') AttributeError: 'str' object has no attribute 'get'

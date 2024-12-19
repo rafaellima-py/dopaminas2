@@ -8,16 +8,20 @@ from utils import *
 from asyncio import sleep
 import datetime
 from datetime import timedelta
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ChatInviteLink
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ChatInviteLink, ReplyKeyboardMarkup, KeyboardButton
 from random import randint
 from asyncio import sleep
 mensagens = {}
 temporizador_user = {}
 user_plano = {}
-admin =  '5090351005' #'673195223' #'6721447659' #7636075219
+admin =  '673195223' #'5090351005' # #'6721447659' #7636075219
 user_images = {}
 canal =  '-1002411773802'#'@SecretinhoOficial'
 historico_previas = {}
+mensagens_broadcast = {}
+travar_disparo = {}
+
+
 async def set_tempo(id):
     
     tempo = 100
@@ -179,7 +183,7 @@ async def temporizador():
 
         # Intervalo entre cada iteração
         await asyncio.sleep(10)
-bot = AsyncTeleBot(config('TELEGRAM_KEY'))
+bot = AsyncTeleBot(config('TELEGRAM_KEY_TEST'))
 
 @bot.message_handler(commands=['start'])
 async def start(message):
@@ -437,9 +441,115 @@ async def callback(call):
     
     
     
-    match call.data:
+    match call.data:   
+        case callback if callback.startswith('gerenciar_'):
+            print(callback)
+            id = str(callback.split('_')[1])
+            user_info = Usuario().show_info_assinantes(id)
+            markup = InlineKeyboardMarkup(row_width=2)
+            markup.add(InlineKeyboardButton('Dar vitalício', callback_data=f'extender_vitalicio_{id}'))
+            markup.add(InlineKeyboardButton('Cancelar assinatura ', callback_data=f'cancelar_assinatura_{id}'))
+            markup.add(InlineKeyboardButton('Dar +7 Dias' , callback_data=f'extender_dias_7_{id}'))
+            markup.add(InlineKeyboardButton('Dar +30 Dias' , callback_data=f'extender_dias_30_{id}'))
+            markup.add(InlineKeyboardButton('<< Voltar' , callback_data=f'gerenciar'))
+            if user_info:
+                nome = user_info[0]['nome']
+                username = user_info[0]['username']
+                idioma = user_info[0]['idioma']
+                tipo = user_info[0]['tipo']
+                criacao = user_info[0]['criacao']
+                expiracao = user_info[0]['expiracao']
+                data_format = datetime.datetime.strftime(criacao, "%d-%m-%Y")
+                data_ex_format = datetime.datetime.strftime(expiracao, "%d-%m-%Y")
+                dias_restantes = expiracao - datetime.datetime.now()
+                print(dias_restantes)
+                if dias_restantes.days > 0:
+                    dias_restantes = f"{dias_restantes.days} dias"
+                elif dias_restantes.days == 0:
+                    dias_restantes = f"{dias_restantes.seconds // 60} minutos"
+    
+                await bot.send_message(
+                call.message.chat.id,
+                (
+                f"""
+                📋 **Informações do Assinante** 
+                👤 Nome: {nome}
+                🌐 Usuário: @{username}
+                📖 Idioma: {idioma}
+                📦 Tipo: {tipo}
+                📅 Criado em: {data_format}
+                ⏳ Expira em: {data_ex_format}
+                ⏳ Dias restantes: {dias_restantes}
+
+                """),reply_markup=markup
+                
+            )           
+        case callback if callback.startswith('cancelar_assinatura_'):
+            id = str(callback.split('_')[2])
+
+            try:
+                await bot.kick_chat_member(chat_id=canal, user_id=id)
+                Usuario().delete_assinatura(str(id))
+                        
+            except Exception as e:
+                print(f"Erro ao excluir usuário {id} do chat {canal}: {e}")
 
 
+
+        case callback if callback.startswith('extender_dias_7_'):
+            id = str(callback.split('_')[3])
+            try:
+                Usuario().extender_assinatura(id, 7)
+                await bot.send_message(call.message.chat.id, 'Assinatura foi extendida com sucesso!')
+            except Exception as e:
+                print(e)
+                await bot.send_message(call.message.chat.id, 'Erro ao extender assinatura!')
+        
+        case callback if callback.startswith('extender_dias_30_'):
+            id = str(callback.split('_')[3])
+            print(id, "30dias")
+            try:
+                Usuario().extender_assinatura(id, 30)
+                await bot.send_message(call.message.chat.id, 'Assinatura foi extendida!')
+            except Exception as e:
+                print(e)
+                await bot.send_message(call.message.chat.id, 'Erro ao extender assinatura!')
+        
+        
+        case callback if callback.startswith('extender_vitalicio_'):
+            id = str(callback.split('_')[2])
+            print(id, "vitalício")
+            try:
+                Usuario().extender_vitalicio(id)
+                await bot.send_message(call.message.chat.id, 'Vitalício foi adicionado!')
+            except Exception as e:
+                print(e)
+                await bot.send_message(call.message.chat.id, 'Erro ao adicionar vitalício!')
+        
+   
+   
+        case callback if callback.startswith('gerenciar'):
+            if str(call.from_user.id) != str(admin):
+                await bot.send_message(call.message.chat.id, 'Você não tem permissão para executar esta função.')
+                return
+
+            menu = InlineKeyboardMarkup(row_width=2)
+            assinantes = Usuario().show_info_assinantes()
+
+            if not assinantes:  # Verifica se a lista está vazia
+                await bot.send_message(call.message.chat.id, 'Você não possui nenhuma assinatura.')
+                return
+
+            # Gera o menu com os assinantes
+            for assinante in assinantes:
+                nome = assinante.get('nome', 'N/A')
+                id_assinante = assinante.get('id', 'N/A')
+                username = assinante.get('username', 'N/A')
+                menu.add(InlineKeyboardButton(f"{nome} ({username})", callback_data=f"gerenciar_{id_assinante}"))
+
+            await bot.send_message(call.message.chat.id, 'Escolha um assinante para gerenciar:', reply_markup=menu)
+
+        
         case 'cta1':
             await reset_tempo(call.from_user.id)
             idioma =  Usuario().ver_idioma(str(call.from_user.id))
@@ -574,6 +684,73 @@ async def callback(call):
             plano = user_plano[call.from_user.id]['plano']
             if plano == 'semanal':
                 pass
+
+        case 'visualizar':
+            user_id = call.from_user.id
+            mensagem = mensagens_broadcast.get(user_id)
+            markup = InlineKeyboardMarkup(row_width=2)
+            markup.add(InlineKeyboardButton('Enviar', callback_data='enviar'))
+            print(mensagem)
+            if not mensagem:
+                await bot.send_message(user_id, 'Nenhuma mensagem salva. Use /disparar para começar.')
+                return
+
+            # Exibe o conteúdo dependendo do tipo
+            if mensagem['type'] == 'text':
+                await bot.send_message(user_id, mensagem['content'], reply_markup=markup)
+            elif mensagem['type'] == 'photo':
+                await bot.send_photo(user_id, mensagem['content'], caption=mensagem.get('caption'), reply_markup=markup)
+            elif mensagem['type'] == 'video':
+                await bot.send_video(user_id, mensagem['content'], caption=mensagem.get('caption'), reply_markup=markup)
+            else:
+                await bot.send_message(user_id, 'Tipo de mensagem desconhecido.')
+        
+        case 'enviar':
+    
+            user_id = call.from_user.id
+            mensagem = mensagens_broadcast.get(user_id)
+
+            if not mensagem:
+                await bot.send_message(user_id, 'Nenhuma mensagem para enviar.')
+                return
+
+            usuario = Usuario()
+            users = usuario.get_id_nao_assinantes()
+
+            if not users:
+                await bot.send_message(user_id, 'Nenhum usuário para enviar a mensagem.')
+                return
+
+            qtd_mensagens = 0
+            lote_tamanho = 10
+            intervalo = 2
+            botoes = ReplyKeyboardMarkup(resize_keyboard=True)
+            botoes.add(KeyboardButton(text='/plans'))
+            # Envio em lotes
+            for i in range(0, len(users), lote_tamanho):
+                lote = users[i:i + lote_tamanho]
+
+                for user in lote:
+                    try:
+                        if mensagem['type'] == 'text':
+                            await bot.send_message(user['id'], mensagem['content'], reply_markup=botoes)
+                        elif mensagem['type'] == 'photo':
+                            await bot.send_photo(user['id'], mensagem['content'],
+                                                  caption=mensagem.get('caption'), reply_markup=botoes)
+                            
+                        elif mensagem['type'] == 'video':
+                            await bot.send_video(user['id'], mensagem['content'],
+                                                  caption=mensagem.get('caption'), reply_markup=botoes)
+                        qtd_mensagens += 1
+                    except Exception as e:
+                        print(f"Erro ao enviar para {user['id']}: {e}")
+                        continue
+
+                await asyncio.sleep(intervalo)
+
+        # Notifica o administrador
+            await bot.send_message(user_id, f"Você enviou a mensagem para {qtd_mensagens} usuários!")
+
         #--------------- callback para comprovantes manuais ------------------
           # Extrair o message_id da callback data
     message_id = int(call.data.split('_')[1])
@@ -582,7 +759,7 @@ async def callback(call):
     user_id = user_images.get(message_id)
     
     if not user_id:
-        await bot.send_message(call.message.chat.id, 'Erro: não foi possível encontrar o usuário.')
+        #await bot.send_message(call.message.chat.id, 'Erro: não foi possível encontrar o usuário.')
         return
     
     match call.data.split('_')[0]:
@@ -600,6 +777,8 @@ async def callback(call):
             await bot.send_message(call.message.chat.id, 'Comprovante Cancelado! Enviando notificação ao usuário...')
             await bot.send_message(user_id, 'Seu comprovante foi cancelado. Por favor, tente novamente.')
     
+        
+
     # Excluir a foto dos registros (opcional)
     user_images.pop(message_id, None)
 
@@ -672,27 +851,88 @@ async def criar_assinatura(user_id):
     temporizador_user.pop(user_id, None)
 
 
-@bot.message_handler(content_types=['photo'])
+@bot.message_handler(content_types=['photo', 'video', 'text'])
 async def handle_photo(message):
-    if message.chat.type == 'private':
-        await reset_tempo(message.from_user.id)
-        user_id = message.from_user.id  # Obtém o ID do usuário que enviou a imagem
-        user_images[message.message_id] = user_id  # Armazena o ID do usuário usando message_id como chave
-        
-        await bot.send_message(message.chat.id, 'Sending to admin...')
-        
-        # Encaminhar a foto para o administrador
-        await bot.forward_message(admin, message.chat.id, message.message_id)
-        
-        # Criar botões de Aceitar/Cancelar
-        botoes = InlineKeyboardMarkup(row_width=2)
-        aceitar = InlineKeyboardButton('Aceitar', callback_data=f'aceitar_{message.message_id}')
-        cancelar = InlineKeyboardButton('Cancelar', callback_data=f'cancelar_{message.message_id}')
-        botoes.add(aceitar, cancelar)
-        
-        # Enviar a mensagem para o admin com os botões
-        await bot.send_message(admin, 'Comprovante recebido. Aceitar ou Cancelar?', reply_markup=botoes)
+    if str(message.from_user.id) == str(admin):
+            user_id = message.from_user.id
+            print(mensagens_broadcast)
+                # Determina o tipo de conteúdo recebido
+            if message.content_type == 'text':
+                mensagens_broadcast[user_id] = {'type': 'text', 'content': message.text, 'caption': None}
+                print(mensagens_broadcast)
+            elif message.content_type == 'photo':
+                photo_id = message.photo[-1].file_id  # Maior resolução
+                mensagens_broadcast[user_id] = {'type': 'photo', 'content': photo_id, 'caption': message.caption}
+            elif message.content_type == 'video':
+                video_id = message.video.file_id
+                mensagens_broadcast[user_id] = {'type': 'video', 'content': video_id, 'caption': message.caption}
+            else:
+                await bot.send_message(user_id, 'Tipo de mensagem não suportado.')
+                return
     
+
+            # Finaliza o travamento e apresenta os botões de ação
+            travar_disparo[user_id] = False
+            markup = InlineKeyboardMarkup(row_width=2)
+            bt_enviar = InlineKeyboardButton('Enviar', callback_data='enviar')
+            bt_visualizar = InlineKeyboardButton('Visualizar', callback_data='visualizar')
+            markup.add(bt_enviar, bt_visualizar)
+
+            await bot.send_message(
+                user_id,
+                'Sua mensagem foi salva! Escolha uma ação abaixo:',
+                reply_markup=markup
+            )
+
+    else:
+        if message.content_type == 'text':
+            idioma = Usuario().ver_idioma(str(message.from_user.id))
+            await list_products(message, idioma)
+
+        elif message.chat.type == 'private':
+            await reset_tempo(message.from_user.id)
+            user_id = message.from_user.id  # Obtém o ID do usuário que enviou a imagem
+            user_images[message.message_id] = user_id  # Armazena o ID do usuário usando message_id como chave
+            
+            await bot.send_message(message.chat.id, 'Sending to admin...')
+            
+            # Encaminhar a foto para o administrador
+            await bot.forward_message(admin, message.chat.id, message.message_id)
+            
+            # Criar botões de Aceitar/Cancelar
+            botoes = InlineKeyboardMarkup(row_width=2)
+            aceitar = InlineKeyboardButton('Aceitar', callback_data=f'aceitar_{message.message_id}')
+            cancelar = InlineKeyboardButton('Cancelar', callback_data=f'cancelar_{message.message_id}')
+            botoes.add(aceitar, cancelar)
+            
+            # Enviar a mensagem para o admin com os botões
+            await bot.send_message(admin, 'Comprovante recebido. Aceitar ou Cancelar?', reply_markup=botoes)
+ 
+
+
+@bot.message_handler(commands=['gerenciar', 'gerenciar_assinatura', 'gerente', 'assinantes'])
+async def gerenciar_assinatura(message):
+    print(message.from_user.id)
+    if str(message.from_user.id) != str(admin):
+        await bot.send_message(message.chat.id, 'Você não tem permissão para executar esta função.')
+        return
+
+    menu = InlineKeyboardMarkup(row_width=2)
+    assinantes = Usuario().show_info_assinantes()
+
+    if not assinantes:  # Verifica se a lista está vazia
+        await bot.send_message(message.chat.id, 'Você não possui nenhuma assinatura.')
+        return
+
+    for assinante in assinantes:
+        nome = assinante['nome']
+        id = assinante['id']
+        username = assinante['username']
+
+        nome_bt = InlineKeyboardButton(f'{nome} ({username})', callback_data=f'gerenciar_{id}')
+        menu.add(nome_bt)
+
+    await bot.send_message(message.chat.id, 'Escolha uma assinatura para gerenciar', reply_markup=menu)
 
 
 async def main():
